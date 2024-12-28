@@ -22,6 +22,7 @@ class _NewExpenseState extends State<NewExpense> {
   final _amountController = TextEditingController();
   Category _selectedCategory = Category.travel;
   DateTime? _selectedDate;
+  var _isSending = false;
 
   void _presentDatePicker() async {
     final now = DateTime.now();
@@ -41,35 +42,45 @@ class _NewExpenseState extends State<NewExpense> {
   }
 
   void _saveExpense() async {
-    if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+    try {
+      if (_formKey.currentState!.validate()) {
+        _formKey.currentState!.save();
 
-      final savedAmount = double.tryParse(_amountController.text)!;
+        setState(() {
+          _isSending = true;
+        });
 
-      final url = Uri.https(dotenv.env['FIREBASE_API']!, 'expenses.json');
-      final response = await http.post(url,
-          headers: {'Content-Type': 'application/json'},
-          body: json.encode({
-            'title': _nameController.text,
-            'amount': savedAmount,
-            'date': formatter.format(_selectedDate!),
-            'category': _selectedCategory.name,
-          }));
-      final result = json.decode(response.body);
+        final savedAmount = double.tryParse(_amountController.text)!;
 
-      if (!context.mounted) {
-        return;
+        final url = Uri.https(dotenv.env['FIREBASE_API']!, 'expenses.json');
+        final response = await http.post(url,
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'title': _nameController.text,
+              'amount': savedAmount,
+              'date': formatter.format(_selectedDate!),
+              'category': _selectedCategory.name,
+            }));
+        final result = json.decode(response.body);
+
+        if (!context.mounted) {
+          return;
+        }
+
+        Navigator.of(context).pop(
+          Expense(
+            id: result['name'],
+            title: _nameController.text,
+            amount: savedAmount,
+            date: _selectedDate!,
+            category: _selectedCategory,
+          ),
+        );
       }
-
-      Navigator.of(context).pop(
-        Expense(
-          id: result['name'],
-          title: _nameController.text,
-          amount: savedAmount,
-          date: _selectedDate!,
-          category: _selectedCategory,
-        ),
-      );
+    } catch (error) {
+      setState(() {
+        _isSending = false;
+      });
     }
   }
 
@@ -197,7 +208,7 @@ class _NewExpenseState extends State<NewExpense> {
                 Row(
                   children: [
                     OutlinedButton.icon(
-                        onPressed: _resetExpense,
+                        onPressed: _isSending ? null : _resetExpense,
                         icon: Icon(Icons.restore),
                         label: Text(
                           'Reset',
@@ -207,13 +218,13 @@ class _NewExpenseState extends State<NewExpense> {
                         )),
                     Spacer(),
                     ElevatedButton.icon(
-                        onPressed: _saveExpense,
+                        onPressed: _isSending ? null : _saveExpense,
                         icon: Icon(
                           Icons.save,
                           color: Theme.of(context).colorScheme.onPrimary,
                         ),
                         label: Text(
-                          'Save Expense',
+                          _isSending ? 'Saving...' : 'Save Expense',
                           style: Theme.of(context).textTheme.bodyMedium!.copyWith(
                                 color: Theme.of(context).colorScheme.onPrimary,
                               ),

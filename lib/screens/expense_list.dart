@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:expense_manager/main.dart';
 import 'package:flutter/material.dart';
 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -10,8 +11,10 @@ import 'package:expense_manager/models/expense.dart';
 import 'package:expense_manager/screens/new_expense.dart';
 import 'package:expense_manager/widgets/expense_item.dart';
 
+// Date formatter
 final formatter = DateFormat.yMMMEd();
 
+// Widget class
 class ExpenseList extends StatefulWidget {
   const ExpenseList({super.key});
 
@@ -19,8 +22,11 @@ class ExpenseList extends StatefulWidget {
   State<ExpenseList> createState() => _ExpenseListState();
 }
 
+// State class
 class _ExpenseListState extends State<ExpenseList> {
   List<Expense> _registeredExpenses = [];
+  var _isLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -30,23 +36,46 @@ class _ExpenseListState extends State<ExpenseList> {
 
   void _loadExpenses() async {
     final url = Uri.https(dotenv.env['FIREBASE_API']!, 'expenses.json');
-    final response = await http.get(url);
-    final Map<String, dynamic> result = json.decode(response.body);
-    final List<Expense> loadedExpenses = [];
-    for (final item in result.entries) {
-      loadedExpenses.add(
-        Expense(
-          id: item.key,
-          title: item.value['title'],
-          amount: item.value['amount'],
-          date: formatter.parse(item.value['date']),
-          category: _categoryString(item.value['category']),
-        ),
-      );
+    try {
+      final response = await http.get(url);
+
+      if (response.statusCode >= 400) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Failed to fetch data, please try sometime later.';
+        });
+      }
+
+      if (response.body == 'null') {
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      final Map<String, dynamic> result = json.decode(response.body);
+      final List<Expense> loadedExpenses = [];
+      for (final item in result.entries) {
+        loadedExpenses.add(
+          Expense(
+            id: item.key,
+            title: item.value['title'],
+            amount: item.value['amount'],
+            date: formatter.parse(item.value['date']),
+            category: _categoryString(item.value['category']),
+          ),
+        );
+      }
+      setState(() {
+        _registeredExpenses = loadedExpenses;
+        _isLoading = false;
+      });
+    } catch (error) {
+      setState(() {
+        _error = 'Something went wrong...';
+        _isLoading = false;
+      });
     }
-    setState(() {
-      _registeredExpenses = loadedExpenses;
-    });
   }
 
   Category _categoryString(String cat) {
@@ -142,6 +171,23 @@ class _ExpenseListState extends State<ExpenseList> {
         style: Theme.of(context).textTheme.bodyLarge,
       ),
     );
+
+    if (_error != null) {
+      mainContent = Center(
+        child: Text(
+          _error!,
+          style: Theme.of(context).textTheme.titleLarge!.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
+        ),
+      );
+    }
+
+    if (_isLoading) {
+      mainContent = Center(
+        child: RefreshProgressIndicator(),
+      );
+    }
 
     if (_registeredExpenses.isNotEmpty) {
       mainContent = ListView.builder(
