@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'package:google_fonts/google_fonts.dart';
+
+import 'package:expense_manager/screens/expense_list.dart';
+
+final kColorScheme = ColorScheme.fromSeed(seedColor: const Color.fromARGB(1, 240, 248, 255));
+
 void main() {
   runApp(const MyApp());
 }
@@ -10,7 +16,29 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: Placeholder(),
+      theme: ThemeData(
+        textTheme: GoogleFonts.robotoTextTheme().copyWith(
+          titleLarge: TextStyle(
+            fontWeight: FontWeight.w600,
+          ),
+          bodyLarge: TextStyle(
+            fontWeight: FontWeight.w500,
+          ),
+          bodyMedium: TextStyle(
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        colorScheme: kColorScheme,
+        appBarTheme: AppBarTheme().copyWith(
+          backgroundColor: kColorScheme.primary,
+          foregroundColor: kColorScheme.onPrimary,
+        ),
+        cardTheme: CardThemeData().copyWith(
+          color: kColorScheme.primaryContainer,
+          margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+        ),
+      ),
+      home: ExpenseList(),
     );
   }
 }
