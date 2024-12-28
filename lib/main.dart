@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:expense_manager/screens/expense_list.dart';
 
 final kColorScheme = ColorScheme.fromSeed(seedColor: const Color.fromARGB(1, 240, 248, 255));
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 

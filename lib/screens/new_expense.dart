@@ -1,4 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'package:expense_manager/models/expense.dart';
 
@@ -35,14 +40,32 @@ class _NewExpenseState extends State<NewExpense> {
     });
   }
 
-  void _saveExpense() {
+  void _saveExpense() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
+      final savedAmount = double.tryParse(_amountController.text)!;
+
+      final url = Uri.https(dotenv.env['FIREBASE_API']!, 'expenses.json');
+      final response = await http.post(url,
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({
+            'title': _nameController.text,
+            'amount': savedAmount,
+            'date': formatter.format(_selectedDate!),
+            'category': _selectedCategory.name,
+          }));
+      final result = json.decode(response.body);
+
+      if (!context.mounted) {
+        return;
+      }
+
       Navigator.of(context).pop(
         Expense(
+          id: result['name'],
           title: _nameController.text,
-          amount: double.tryParse(_amountController.text)!,
+          amount: savedAmount,
           date: _selectedDate!,
           category: _selectedCategory,
         ),
@@ -107,6 +130,7 @@ class _NewExpenseState extends State<NewExpense> {
                           label: Text('Amount'),
                           prefix: Text('\$ '),
                         ),
+                        keyboardType: TextInputType.numberWithOptions(decimal: true),
                         validator: (value) {
                           if (value == null ||
                               value.trim().isEmpty ||

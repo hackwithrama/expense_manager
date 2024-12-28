@@ -1,8 +1,16 @@
-import 'package:expense_manager/screens/new_expense.dart';
-import 'package:expense_manager/widgets/expense_item.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
+
 import 'package:expense_manager/models/expense.dart';
+import 'package:expense_manager/screens/new_expense.dart';
+import 'package:expense_manager/widgets/expense_item.dart';
+
+final formatter = DateFormat.yMMMEd();
 
 class ExpenseList extends StatefulWidget {
   const ExpenseList({super.key});
@@ -12,18 +20,66 @@ class ExpenseList extends StatefulWidget {
 }
 
 class _ExpenseListState extends State<ExpenseList> {
-  final List<Expense> _registeredExpenses = [
-    Expense(title: 'Flight Ticket', amount: 200, date: DateTime.now(), category: Category.travel),
-    Expense(title: 'Dinner', amount: 50, date: DateTime.now(), category: Category.food),
-    Expense(title: 'Life Insurance', amount: 100.75, date: DateTime.now(), category: Category.insurance)
-  ];
+  List<Expense> _registeredExpenses = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExpenses();
+  }
+
+  void _loadExpenses() async {
+    final url = Uri.https(dotenv.env['FIREBASE_API']!, 'expenses.json');
+    final response = await http.get(url);
+    final Map<String, dynamic> result = json.decode(response.body);
+    final List<Expense> loadedExpenses = [];
+    for (final item in result.entries) {
+      loadedExpenses.add(
+        Expense(
+          id: item.key,
+          title: item.value['title'],
+          amount: item.value['amount'],
+          date: formatter.parse(item.value['date']),
+          category: _categoryString(item.value['category']),
+        ),
+      );
+    }
+    setState(() {
+      _registeredExpenses = loadedExpenses;
+    });
+  }
+
+  Category _categoryString(String cat) {
+    switch (cat) {
+      case 'food':
+        return Category.food;
+      case 'travel':
+        return Category.travel;
+      case 'insurance':
+        return Category.insurance;
+      case 'luxary':
+        return Category.luxary;
+      case 'work':
+        return Category.work;
+      case 'tution':
+        return Category.tution;
+      default:
+        throw Exception('Unknown Category : $cat');
+    }
+  }
 
   void _addExpense() async {
-    final getExpense = await Navigator.of(context).push<Expense>(NewExpense.route());
+    Expense? getExpense = await Navigator.of(context).push<Expense>(NewExpense.route());
+
+    if (getExpense == null) {
+      return;
+    }
 
     setState(() {
-      _registeredExpenses.add(getExpense!);
+      _registeredExpenses.add(getExpense);
     });
+
+    _loadExpenses();
   }
 
   void _removeExpense(Expense expense) {
@@ -80,12 +136,15 @@ class _ExpenseListState extends State<ExpenseList> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Expense Manager'),
-        actions: [IconButton(onPressed: _addExpense, icon: Icon(Icons.add_task))],
+    Widget mainContent = Center(
+      child: Text(
+        'No Expense found, please add some.',
+        style: Theme.of(context).textTheme.bodyLarge,
       ),
-      body: ListView.builder(
+    );
+
+    if (_registeredExpenses.isNotEmpty) {
+      mainContent = ListView.builder(
         itemCount: _registeredExpenses.length,
         itemBuilder: (ctx, index) {
           return Dismissible(
@@ -99,7 +158,15 @@ class _ExpenseListState extends State<ExpenseList> {
             ),
           );
         },
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Expense Manager'),
+        actions: [IconButton(onPressed: _addExpense, icon: Icon(Icons.add_task))],
       ),
+      body: mainContent,
     );
   }
 }
