@@ -37,6 +37,20 @@ class MyApp extends StatelessWidget {
           color: kColorScheme.primaryContainer,
           margin: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
         ),
+        iconTheme: IconThemeData().copyWith(
+          color: kColorScheme.secondary,
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: kColorScheme.primary,
+          ),
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: kColorScheme.primary,
+            foregroundColor: kColorScheme.onPrimary,
+          ),
+        ),
       ),
       home: ExpenseList(),
     );

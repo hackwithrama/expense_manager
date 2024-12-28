@@ -1,3 +1,4 @@
+import 'package:expense_manager/screens/new_expense.dart';
 import 'package:expense_manager/widgets/expense_item.dart';
 import 'package:flutter/material.dart';
 
@@ -16,6 +17,14 @@ class _ExpenseListState extends State<ExpenseList> {
     Expense(title: 'Dinner', amount: 50, date: DateTime.now(), category: Category.food),
     Expense(title: 'Life Insurance', amount: 100.75, date: DateTime.now(), category: Category.insurance)
   ];
+
+  void _addExpense() async {
+    final getExpense = await Navigator.of(context).push<Expense>(NewExpense.route());
+
+    setState(() {
+      _registeredExpenses.add(getExpense!);
+    });
+  }
 
   void _removeExpense(Expense expense) {
     final expenseIndex = _registeredExpenses.indexOf(expense);
@@ -74,7 +83,7 @@ class _ExpenseListState extends State<ExpenseList> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Expense Manager'),
-        actions: [IconButton(onPressed: () {}, icon: Icon(Icons.add_task))],
+        actions: [IconButton(onPressed: _addExpense, icon: Icon(Icons.add_task))],
       ),
       body: ListView.builder(
         itemCount: _registeredExpenses.length,
