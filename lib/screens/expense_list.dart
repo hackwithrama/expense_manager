@@ -110,8 +110,11 @@ class _ExpenseListState extends State<ExpenseList> {
     _loadExpenses();
   }
 
-  void _removeExpense(Expense expense) {
+  void _removeExpense(Expense expense) async {
     final expenseIndex = _registeredExpenses.indexOf(expense);
+
+    final url = Uri.https(dotenv.env['FIREBASE_API']!, 'expenses/${expense.id}.json');
+    await http.delete(url);
 
     setState(() {
       _registeredExpenses.remove(expense);
@@ -120,19 +123,20 @@ class _ExpenseListState extends State<ExpenseList> {
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-          action: SnackBarAction(
-            textColor: Theme.of(context).colorScheme.onPrimary,
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            label: 'UNDO',
-            onPressed: () {
-              setState(
-                () {
-                  _registeredExpenses.insert(expenseIndex, expense);
-                },
-              );
-            },
-          ),
+          // action: SnackBarAction(
+          //   textColor: Theme.of(context).colorScheme.onPrimary,
+          //   backgroundColor: Theme.of(context).colorScheme.primary,
+          //   label: 'UNDO',
+          //   onPressed: () {
+          //     setState(
+          //       () {
+          //         _registeredExpenses.insert(expenseIndex, expense);
+          //       },
+          //     );
+          //   },
+          // ),
           content: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Icons.delete_forever,
@@ -143,7 +147,7 @@ class _ExpenseListState extends State<ExpenseList> {
               ),
               Text(
                 'Expense Removed',
-                textAlign: TextAlign.center,
+                // textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge!.copyWith(
                       color: Theme.of(context).colorScheme.onSecondary,
                     ),
@@ -153,7 +157,7 @@ class _ExpenseListState extends State<ExpenseList> {
           width: 350, // Width of the SnackBar.
           padding: const EdgeInsets.symmetric(
             horizontal: 8.0,
-            vertical: 5.0,
+            vertical: 10.0,
           ),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
